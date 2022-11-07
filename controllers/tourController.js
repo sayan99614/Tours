@@ -12,13 +12,22 @@ exports.checkBody = (req, res, next) => {
 
 exports.getAllTours = async (req, res) => {
   try {
-    const tours = await Tour.find();
+    const filQueries = { ...req.query };
+    const excludeItems = ["limit", "page", "sort", "fields"];
+    excludeItems.forEach((el) => delete filQueries[el]);
+    let strQueries = JSON.stringify(filQueries);
+    strQueries = strQueries.replace(
+      /\b(gte|lte|lt|gt)\b/g,
+      (match) => `$${match}`
+    );
+    const tours = Tour.find(JSON.parse(strQueries));
+    const filteredToures = await tours;
     res.status(200).json({
       status: "success",
       requestedAt: req.requestTime,
-      results: tours.length,
+      results: filteredToures.length,
       data: {
-        tours,
+        filteredToures,
       },
     });
   } catch (error) {
@@ -49,7 +58,6 @@ exports.createTour = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
     res.status(400).json({
       msg: "Something went wrong ! please try again",
     });
