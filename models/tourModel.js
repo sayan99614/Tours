@@ -53,8 +53,18 @@ const tourSchema = new mongoose.Schema({
   creatdAt: {
     type: Date,
     default: Date.now(),
+    select: false,
   },
   startDates: [Date],
+});
+
+tourSchema.virtual("totalWees", function () {
+  return this.duration / 7;
+});
+
+tourSchema.pre("save", function (next) {
+  console.log(this);
+  next();
 });
 
 const Tour = mongoose.model("Tour", tourSchema);
