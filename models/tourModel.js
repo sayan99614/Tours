@@ -17,6 +17,8 @@ const tourSchema = new mongoose.Schema({
   maxGroupSize: {
     type: Number,
     required: [true, "A tour must have a group size"],
+    max: [10, "A group have maximum 10 people"],
+    min: [2, "A group should have minimum of 2 people"],
   },
   ratingsAverage: {
     type: Number,
@@ -27,6 +29,10 @@ const tourSchema = new mongoose.Schema({
   difficulty: {
     type: String,
     required: [true, "difficulty is required"],
+    enum: {
+      values: ["Easy", "Medium", "Difficult"],
+      message: "difficulty shoud be Easy,Medium or Difficult",
+    },
   },
   ratingsQuantity: {
     type: Number,
@@ -35,6 +41,21 @@ const tourSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: [true, "A tour must have a price"],
+    validate: {
+      validator: function (val) {
+        return val > 0;
+      },
+      message: "Tour price must be grater than zero",
+    },
+  },
+  discount: {
+    type: Number,
+    validate: {
+      validator: function (val) {
+        return val < this.price;
+      },
+      message: "Discount should be less then actual price",
+    },
   },
   discription: {
     type: String,
@@ -55,15 +76,44 @@ const tourSchema = new mongoose.Schema({
     default: Date.now(),
     select: false,
   },
+  secretTour: {
+    type: Boolean,
+    default: false,
+  },
   startDates: [Date],
 });
 
-tourSchema.virtual("totalWees", function () {
-  return this.duration / 7;
+// tourSchema.virtual("totalWees", function () {
+//   return this.duration / 7;
+// });
+
+// tourSchema.pre("save", function (next) {
+//   console.log(this);
+//   next();
+// });
+
+tourSchema.pre(/^find/, function (next) {
+  this.timeTake = new Date();
+  this.find({
+    secretTour: {
+      $ne: true,
+    },
+  });
+  next();
 });
 
-tourSchema.pre("save", function (next) {
-  console.log(this);
+tourSchema.post(/^find/, function (doc, next) {
+  next();
+});
+
+tourSchema.pre("aggregate", function (next) {
+  this.pipeline().unshift({
+    $match: {
+      secretTour: {
+        $ne: true,
+      },
+    },
+  });
   next();
 });
 
