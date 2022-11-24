@@ -1,3 +1,12 @@
+process.on("uncaughtException", (err) => {
+  console.log(err.name, err.message);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.log(err.name, err.message);
+  process.exit(1);
+});
 const dotenv = require("dotenv");
 const app = require("./src/app");
 const mongoose = require("mongoose");
@@ -13,6 +22,6 @@ mongoose
   })
   .then(() => console.log("DB connection successful!"));
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`app is running 👋 :: on-${port}`);
 });

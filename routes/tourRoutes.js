@@ -1,12 +1,17 @@
 const express = require("express");
 const tourController = require("../controllers/tourController");
-
+const { protect, restrictTo } = require("../controllers/authController");
 const router = express.Router();
 
 router
   .route("/")
-  .get(tourController.getAllTours)
-  .post(tourController.checkBody, tourController.createTour);
+  .get(protect, tourController.getAllTours)
+  .post(
+    tourController.checkBody,
+    protect,
+    restrictTo("admin"),
+    tourController.createTour
+  );
 
 router
   .route("/top-5-cheap")
@@ -16,9 +21,13 @@ router.route("/stats").get(tourController.tourAnalytics);
 
 router
   .route("/:id")
-  .get(tourController.getTour)
-  .patch(tourController.updateTour)
-  .delete(tourController.deleteTour);
+  .get(protect, tourController.getTour)
+  .patch(protect, tourController.updateTour)
+  .delete(
+    protect,
+    restrictTo("admin", "lead-guide"),
+    tourController.deleteTour
+  );
 
 router.route("/most-busy/:year").get(tourController.TourInMonths);
 
