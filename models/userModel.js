@@ -61,6 +61,13 @@ userSchema.pre("save", async function (next) {
   this.confirmPassword = undefined;
   next();
 });
+userSchema.pre("save", function (next) {
+  if (!this.isModified("password") || this.isNew) {
+    return next();
+  }
+  this.passwordChangedAt = Date.now() - 1000;
+  next();
+});
 userSchema.methods.isCorrectPassword = async (userPassword, password) => {
   return await bcrypt.compare(userPassword, password);
 };
@@ -83,7 +90,6 @@ userSchema.methods.createForgotPasswordToken = function () {
   this.passwordResetToken = hashedToken;
   this.passwordResetExpireTime = Date.now() + 10 * 60 * 1000;
 
-  console.log(plainToken, hashedToken);
   return plainToken;
 };
 module.exports = mongoose.model("User", userSchema);

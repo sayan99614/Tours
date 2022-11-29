@@ -3,10 +3,17 @@ const jwt = require("jsonwebtoken");
 const { promisify } = require("util");
 const ErrorHandler = require("../utils/errorHandler");
 const sendEmail = require("../utils/email");
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 const wraptryCatch = (fn) => {
   return function (req, res, next) {
     fn(req, res, next).catch((err) => next(err));
   };
+};
+const createJWTtoken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.EXPIRES_IN,
+  });
 };
 exports.signUp = wraptryCatch(async (req, res, next) => {
   const { name, email, password, confirmPassword, role } = req.body;
@@ -22,9 +29,10 @@ exports.signUp = wraptryCatch(async (req, res, next) => {
       new ErrorHandler("something went wrong please try again later", 500)
     );
   }
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.EXPIRES_IN,
-  });
+  const token = createJWTtoken(user._id);
+  // jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+  //   expiresIn: process.env.EXPIRES_IN,
+  // });
   user.password = undefined;
   res.status(201).json({
     status: "success",
@@ -135,6 +143,73 @@ exports.forgotPasswordCreateToken = wraptryCatch(async (req, res, next) => {
         "Something went wrong email is not sent please try again later",
         500
       )
+    );
+  }
+});
+
+exports.resetPassword = wraptryCatch(async (req, res, next) => {
+  const token = req.params.token;
+  const { password, confirmPassword } = req.body;
+
+  if (password !== confirmPassword) {
+    return next(
+      new ErrorHandler("password and confirm  password has to me same", 400)
+    );
+  }
+
+  if (!token) {
+    return next(new ErrorHandler("invalid token please try again", 400));
+  }
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpireTime: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return next(
+      new ErrorHandler(
+        "Token is not valid generate new token and try again",
+        400
+      )
+    );
+  }
+
+  user.password = password;
+  user.confirmPassword = confirmPassword;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpireTime = undefined;
+
+  await user.save();
+  const jwttoken = createJWTtoken(user._id);
+  res.status(200).json({
+    status: "success",
+    message: "Password changed successfully !!",
+    token: jwttoken,
+  });
+});
+
+exports.updatePassword = wraptryCatch(async (req, res, next) => {
+  const { password, newPassword, confirmnewPassword } = req.body;
+  if (newPassword !== confirmnewPassword) {
+    return next(new ErrorHandler("password mismatched please try again", 400));
+  }
+  const user = await User.findById(req.user._id).select("+password");
+
+  if (await user.isCorrectPassword(password, user.password)) {
+    user.password = newPassword;
+    user.confirmPassword = confirmnewPassword;
+    await user.save();
+    const token = createJWTtoken(user._id);
+    res.status(200).json({
+      status: "success",
+      message: "password changed successfully!!",
+      token,
+    });
+  } else {
+    return next(
+      new ErrorHandler("password incorrect please try forgot password", 400)
     );
   }
 });
