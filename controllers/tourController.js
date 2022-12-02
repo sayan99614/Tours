@@ -82,7 +82,7 @@ exports.getAllTours = wraptryCatch(async (req, res, next) => {
 });
 
 exports.getTour = wraptryCatch(async (req, res, next) => {
-  const t = await Tour.findById({ _id: req.params.id });
+  const t = await Tour.findById({ _id: req.params.id }).populate("reviews");
 
   if (!t) {
     return next(new ErrorHandler("No tour found with the id", 404));

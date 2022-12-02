@@ -50,9 +50,19 @@ const userSchema = new mongoose.Schema({
       message: "passwords are not same",
     },
   },
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
   passwordResetToken: String,
   passwordResetExpireTime: Date,
   passwordChangedAt: Date,
+});
+
+userSchema.pre(/^find/, function (next) {
+  this.find({ active: { $ne: false } });
+  next();
 });
 
 userSchema.pre("save", async function (next) {

@@ -5,6 +5,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const sendEmail = require("../utils/email");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
+
 const wraptryCatch = (fn) => {
   return function (req, res, next) {
     fn(req, res, next).catch((err) => next(err));
@@ -34,6 +35,14 @@ exports.signUp = wraptryCatch(async (req, res, next) => {
   //   expiresIn: process.env.EXPIRES_IN,
   // });
   user.password = undefined;
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+  res.cookie("jwt", token, cookieOptions);
   res.status(201).json({
     status: "success",
     token,
@@ -54,6 +63,14 @@ exports.logIn = wraptryCatch(async (req, res, next) => {
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.EXPIRES_IN,
   });
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+  res.cookie("jwt", token, cookieOptions);
   res.status(200).json({
     status: "success",
     token,
@@ -183,6 +200,14 @@ exports.resetPassword = wraptryCatch(async (req, res, next) => {
 
   await user.save();
   const jwttoken = createJWTtoken(user._id);
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+  res.cookie("jwt", jwttoken, cookieOptions);
   res.status(200).json({
     status: "success",
     message: "Password changed successfully !!",
@@ -212,4 +237,42 @@ exports.updatePassword = wraptryCatch(async (req, res, next) => {
       new ErrorHandler("password incorrect please try forgot password", 400)
     );
   }
+});
+
+const filterUserFields = (reqobj, ...fields) => {
+  const updatedData = {};
+  Object.keys(reqobj).map((el) => {
+    if (fields.includes(el)) {
+      updatedData[el] = reqobj[el];
+    }
+  });
+  return updatedData;
+};
+
+exports.updateUserData = wraptryCatch(async (req, res, next) => {
+  if (req.body.password || req.body.confirmPassword) {
+    return next(
+      new ErrorHandler("this route is not for password changing", 403)
+    );
+  }
+  const filteredUserData = filterUserFields(req.body, "name");
+
+  const user = await User.findByIdAndUpdate(req.user._id, filteredUserData, {
+    runValidators: true,
+    new: true,
+  });
+
+  res.status(200).json({
+    status: "success",
+    data: user,
+  });
+});
+
+exports.deactiveUser = wraptryCatch(async (req, res, next) => {
+  await User.findByIdAndUpdate(req.user._id, {
+    active: false,
+  });
+  res.status(204).json({
+    status: "success",
+  });
 });
