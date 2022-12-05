@@ -1,5 +1,6 @@
 const Tour = require("../models/tourModel");
 const ErrorHandler = require("../utils/errorHandler");
+const { deleteOne, createOne, updateOne, getOne } = require("./factoryHandler");
 const wraptryCatch = (fn) => {
   return function (req, res, next) {
     fn(req, res, next).catch((err) => next(err));
@@ -81,52 +82,14 @@ exports.getAllTours = wraptryCatch(async (req, res, next) => {
   });
 });
 
-exports.getTour = wraptryCatch(async (req, res, next) => {
-  const t = await Tour.findById({ _id: req.params.id }).populate("reviews");
-
-  if (!t) {
-    return next(new ErrorHandler("No tour found with the id", 404));
-  }
-  res.status(200).json({
-    status: "success",
-    data: {
-      tour: t,
-    },
-  });
+exports.getTour = getOne(Tour, {
+  path: "reviews",
 });
 
-exports.createTour = wraptryCatch(async (req, res, next) => {
-  const new_tour = await Tour.create(req.body);
-  res.status(201).json({
-    status: "success",
-    data: {
-      tour: new_tour,
-    },
-  });
-});
+exports.createTour = createOne(Tour);
+exports.updateTour = updateOne(Tour);
+exports.deleteTour = deleteOne(Tour);
 
-exports.updateTour = wraptryCatch(async (req, res, next) => {
-  const updatedTour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-  });
-  res.status(200).json({
-    status: "success",
-    data: {
-      tour: updatedTour,
-    },
-  });
-});
-
-exports.deleteTour = wraptryCatch(async (req, res, next) => {
-  const tour = await Tour.findByIdAndDelete(req.params.id);
-  if (!tour) {
-    return next(new ErrorHandler("wrong id no data found with the id", 404));
-  }
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
-});
 exports.tourAnalytics = wraptryCatch(async (req, res, next) => {
   const aggrigatedTours = await Tour.aggregate([
     {

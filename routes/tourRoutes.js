@@ -1,6 +1,8 @@
 const express = require("express");
 const tourController = require("../controllers/tourController");
 const { protect, restrictTo } = require("../controllers/authController");
+const { createReview } = require("../controllers/reviewController");
+const tourRouter = require("../routes/reviewRoute");
 const router = express.Router();
 
 router
@@ -18,6 +20,8 @@ router
   .get(tourController.getTop5Cheap, tourController.getAllTours);
 
 router.route("/stats").get(tourController.tourAnalytics);
+
+router.use("/:tourId/reviews", tourRouter);
 
 router
   .route("/:id")

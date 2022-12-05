@@ -1,5 +1,6 @@
 const ErrorHandler = require("../utils/errorHandler");
 const User = require("../models/userModel");
+const { deleteOne } = require("./factoryHandler");
 const wraptryCatch = (fn) => {
   return function (req, res, next) {
     fn(req, res, next).catch((err) => next(err));
@@ -44,9 +45,4 @@ exports.updateUser = wraptryCatch(async (req, res, next) => {
   }
   const filteredUserData = filterUserFields(req.body, "name");
 });
-exports.deleteUser = (req, res) => {
-  res.status(500).json({
-    status: "error",
-    message: "This route is not yet defined!",
-  });
-};
+exports.deleteUser = deleteOne(User);
