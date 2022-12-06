@@ -118,14 +118,10 @@ const tourSchema = new mongoose.Schema(
   }
 );
 
-// tourSchema.virtual("totalWees", function () {
-//   return this.duration / 7;
-// });
-
-// tourSchema.pre("save", function (next) {
-//   console.log(this);
-//   next();
-// });
+tourSchema.index({
+  price: 1,
+  ratingsAverage: -1,
+});
 
 tourSchema.virtual("reviews", {
   ref: "Review",

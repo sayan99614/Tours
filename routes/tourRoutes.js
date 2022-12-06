@@ -1,13 +1,12 @@
 const express = require("express");
 const tourController = require("../controllers/tourController");
 const { protect, restrictTo } = require("../controllers/authController");
-const { createReview } = require("../controllers/reviewController");
 const tourRouter = require("../routes/reviewRoute");
 const router = express.Router();
 
 router
   .route("/")
-  .get(protect, tourController.getAllTours)
+  .get(tourController.getAllTours)
   .post(
     tourController.checkBody,
     protect,
@@ -25,8 +24,8 @@ router.use("/:tourId/reviews", tourRouter);
 
 router
   .route("/:id")
-  .get(protect, tourController.getTour)
-  .patch(protect, tourController.updateTour)
+  .get(tourController.getTour)
+  .patch(protect, restrictTo("admin", "lead-guide"), tourController.updateTour)
   .delete(
     protect,
     restrictTo("admin", "lead-guide"),

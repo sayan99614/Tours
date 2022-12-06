@@ -21,11 +21,17 @@ router.patch("/resetPassword/:token", resetPassword);
 router.patch("/updatePassword/", protect, updatePassword);
 router.patch("/updateMydata", protect, updateUserData);
 router.delete("/deleteMyData", protect, deactiveUser);
+
+router
+  .route("/me")
+  .get(protect, userController.setCurrentUser, userController.getUser);
+
+router.use(protect, restrictTo("admin"));
+
 router
   .route("/")
-  .get(protect, restrictTo("admin"), userController.getAllUsers)
+  .get(userController.getAllUsers)
   .post(userController.createUser);
-
 router
   .route("/:id")
   .get(userController.getUser)

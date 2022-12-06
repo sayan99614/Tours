@@ -13,7 +13,7 @@ const hpp = require("hpp");
 const app = express();
 app.use(helmet());
 const limitRequests = rateLimit({
-  max: 10,
+  max: 100,
   windowMs: 60 * 60 * 1000,
   message: "Too many requestes please try after one hour",
 });

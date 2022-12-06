@@ -1,30 +1,24 @@
 const ErrorHandler = require("../utils/errorHandler");
 const User = require("../models/userModel");
-const { deleteOne } = require("./factoryHandler");
+const { deleteOne, getOne, getAll } = require("./factoryHandler");
 const wraptryCatch = (fn) => {
   return function (req, res, next) {
     fn(req, res, next).catch((err) => next(err));
   };
 };
 
-exports.getAllUsers = wraptryCatch(async (req, res) => {
-  const users = await User.find();
-  res.status(200).json({
-    status: "success",
-    data: users,
-  });
-});
-exports.getUser = (req, res) => {
-  res.status(500).json({
-    status: "error",
-    message: "This route is not yet defined!",
-  });
-};
+exports.getAllUsers = getAll(User);
+exports.getUser = getOne(User);
 exports.createUser = (req, res) => {
   res.status(500).json({
     status: "error",
-    message: "This route is not yet defined!",
+    message: "use signup route to create account",
   });
+};
+
+exports.setCurrentUser = (req, res, next) => {
+  if (req.user) req.params.id = req.user._id;
+  next();
 };
 
 const filterUserFields = (reqobj, ...fields) => {

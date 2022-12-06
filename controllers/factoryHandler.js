@@ -1,3 +1,4 @@
+const ApiFeature = require("../utils/ApiFeatures");
 const ErrorHandler = require("../utils/errorHandler");
 
 const wraptryCatch = (fn) => {
@@ -57,6 +58,31 @@ exports.getOne = (Model, populateOptions) => {
     res.status(200).json({
       status: "success",
       data: result,
+    });
+  });
+};
+
+exports.getAll = (Model) => {
+  return wraptryCatch(async (req, res, next) => {
+    let filter = {};
+    if (req.params.tourId) filter = { tour: req.params.tourId }; // this is for getting reviews by tour id
+
+    const apiFeature = new ApiFeature(Model.find(filter), req.query)
+      .filter()
+      .sort()
+      .fields()
+      .paginate();
+    const filteredDocuments = await apiFeature.query;
+
+    if (!filteredDocuments)
+      return next(
+        new ErrorHandler("something went wrong please try again", 500)
+      );
+    res.status(200).json({
+      status: "success",
+      requestedAt: req.requestTime,
+      results: filteredDocuments.length,
+      data: filteredDocuments,
     });
   });
 };

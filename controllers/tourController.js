@@ -1,52 +1,17 @@
 const Tour = require("../models/tourModel");
 const ErrorHandler = require("../utils/errorHandler");
-const { deleteOne, createOne, updateOne, getOne } = require("./factoryHandler");
+const {
+  deleteOne,
+  createOne,
+  updateOne,
+  getOne,
+  getAll,
+} = require("./factoryHandler");
 const wraptryCatch = (fn) => {
   return function (req, res, next) {
     fn(req, res, next).catch((err) => next(err));
   };
 };
-class ApiFeature {
-  constructor(query, queryString) {
-    this.query = query;
-    this.queryString = queryString;
-  }
-
-  filter() {
-    const filQueries = { ...this.queryString };
-    const excludeItems = ["limit", "page", "sort", "fields"];
-    excludeItems.forEach((el) => delete filQueries[el]);
-    let strQueries = JSON.stringify(filQueries);
-    strQueries = strQueries.replace(
-      /\b(gte|lte|lt|gt)\b/g,
-      (match) => `$${match}`
-    );
-    this.query = this.query.find(JSON.parse(strQueries));
-    return this;
-  }
-  sort() {
-    if (this.queryString.sort) {
-      this.query = this.query.sort(this.queryString.sort);
-    }
-    return this;
-  }
-  fields() {
-    if (this.queryString.fields) {
-      const fields = this.queryString.fields.split(",").join(" ");
-      this.query = this.query.select(fields);
-    } else {
-      this.query = this.query.select("-__v");
-    }
-    return this;
-  }
-  paginate() {
-    const page = this.queryString.page * 1 || 1;
-    const limit = this.queryString.limit * 1 || 10;
-    const skip = (page - 1) * limit;
-    this.query = this.query.skip(skip).limit(limit);
-    return this;
-  }
-}
 
 exports.checkBody = (req, res, next) => {
   if (!req.body.name || !req.body.price) {
@@ -65,22 +30,7 @@ exports.getTop5Cheap = (req, res, next) => {
   next();
 };
 
-exports.getAllTours = wraptryCatch(async (req, res, next) => {
-  const apiFeature = new ApiFeature(Tour.find(), req.query)
-    .filter()
-    .sort()
-    .fields()
-    .paginate();
-  const filteredToures = await apiFeature.query;
-  res.status(200).json({
-    status: "success",
-    requestedAt: req.requestTime,
-    results: filteredToures.length,
-    data: {
-      filteredToures,
-    },
-  });
-});
+exports.getAllTours = getAll(Tour);
 
 exports.getTour = getOne(Tour, {
   path: "reviews",

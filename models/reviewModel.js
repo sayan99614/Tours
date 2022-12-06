@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Tour = require("./tourModel");
 
 const reqviewSchema = new mongoose.Schema(
   {
@@ -39,6 +40,33 @@ reqviewSchema.pre(/^find/, function (next) {
     select: "-__v -passwordChangedAt",
   });
   next();
+});
+
+reqviewSchema.statics.calculateReviewAvg = async function (tourId) {
+  const stats = await this.aggregate([
+    {
+      $match: { tour: tourId },
+    },
+    {
+      $group: {
+        _id: "$tour",
+        tRatings: {
+          $sum: 1,
+        },
+        aRatings: {
+          $avg: "$rating",
+        },
+      },
+    },
+  ]);
+  await Tour.findByIdAndUpdate(tourId, {
+    ratingsQuantity: stats[0].tRatings,
+    ratingsAverage: stats[0].aRatings,
+  });
+};
+
+reqviewSchema.post("save", function () {
+  this.constructor.calculateReviewAvg(this.tour);
 });
 
 module.exports = mongoose.model("Review", reqviewSchema);
